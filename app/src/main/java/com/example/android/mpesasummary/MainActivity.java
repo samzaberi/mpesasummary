@@ -22,7 +22,7 @@ import java.util.Calendar;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
-    ArrayList<String> smsList;
+    ArrayList<MpesaEntry> smsList;
     private static final int PERMISSION_REQUEST_READ_CONTACTS = 100;
     private static final String TAG = "SMS";
 
@@ -61,33 +61,54 @@ public class MainActivity extends AppCompatActivity {
                 Calendar calendar = Calendar.getInstance();
                 calendar.setTimeInMillis(dateMillis);
                 String formattedDate = new SimpleDateFormat("MM/dd/yyyy").format(calendar.getTime());
-
                 String body = c.getString(c.getColumnIndexOrThrow("body"));
-                String substr = "";
+
                 MpesaEntry entry = new MpesaEntry();
+
                 if (body.contains("sent")) {
-                    substr = StringUtils.substringBetween(body, "Ksh", "sent");
+                    entry.setDate(formattedDate);
+                    entry.setKeyword("sent");
+                    entry.setAmount(StringUtils.substringBetween(body, "Ksh", "sent"));
+                    smsList.add(entry);
+
                 } else if (body.contains("received")) {
-                    substr = StringUtils.substringBetween(body, "Ksh", "from");
+                    entry.setDate(formattedDate);
+                    entry.setKeyword("received");
+                    entry.setAmount(StringUtils.substringBetween(body, "Ksh", "from"));
+                    smsList.add(entry);
+
                 } else if (body.contains("paid")) {
-                    substr = StringUtils.substringBetween(body, "Ksh", "paid");
+                    entry.setDate(formattedDate);
+                    entry.setKeyword("sent");
+                    entry.setAmount(StringUtils.substringBetween(body, "Ksh", "paid"));
+                    smsList.add(entry);
+
                 } else if (body.contains("bought")) {
-                    substr = StringUtils.substringBetween(body, "Ksh", "of");
+                    entry.setDate(formattedDate);
+                    entry.setKeyword("sent");
+                    entry.setAmount(StringUtils.substringBetween(body, "Ksh", "of"));
+                    smsList.add(entry);
+
                 } else if (body.contains("give")) {
-                    substr = StringUtils.substringBetween(body, "Ksh", "cash");
+                    entry.setDate(formattedDate);
+                    entry.setKeyword("sent");
+                    entry.setAmount(StringUtils.substringBetween(body, "Ksh", "cash"));
+                    smsList.add(entry);
+
                 } else if (body.contains("withdraw")) {
-                    substr = StringUtils.substringBetween(body, "Withdraw Ksh", "from");
+                    entry.setDate(formattedDate);
+                    entry.setKeyword("sent");
+                    entry.setAmount(StringUtils.substringBetween(body, "Withdraw Ksh", "from"));
+                    smsList.add(entry);
+
                 }
-
-                smsList.add("Date: " + formattedDate + " Body: " + substr);
-
 
             }
             c.close();
         } else {
             Log.e(TAG, "no messages found");
         }
-
+        smsList.removeIf(n->(n.toString()=="date:,keyword:,amount:"));
         msgText.setText(smsList.toString());
 
     }

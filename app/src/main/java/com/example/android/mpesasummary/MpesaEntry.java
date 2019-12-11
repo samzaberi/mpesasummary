@@ -7,12 +7,12 @@ import org.apache.commons.lang3.StringUtils;
 public class MpesaEntry {
     private String date;
     private String keyword;
-    private double amount;
+    private String amount;
 
     public MpesaEntry(){
         this.date="";
         this.keyword="";
-        this.amount=0.0;
+        this.amount="";
     }
 
     public String getDate() {
@@ -31,17 +31,17 @@ public class MpesaEntry {
         this.keyword = keyword;
     }
 
-    public double getAmount() {
+    public String getAmount() {
         return amount;
     }
 
-    public void setAmount(double amount) {
+    public void setAmount(String amount) {
         this.amount = amount;
     }
 
     @NonNull
     @Override
     public String toString() {
-        return "date: "+date+",keyword: "+keyword+",amount: "+amount;
+        return "date: "+date+", keyword: "+keyword+", amount: "+amount;
     }
 }
