@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     ArrayList<MpesaEntry> allTextEntries, currentMonthEntries;
@@ -40,11 +41,11 @@ public class MainActivity extends AppCompatActivity {
         if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
             allTextEntries = fetchTexts();
             currentMonthEntries = getCurrentMonthEntries(allTextEntries);
-
             msgText.setText(currentMonthEntries.toString());
 
         } else {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS}, PERMISSION_REQUEST_READ_CONTACTS);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS},
+                    PERMISSION_REQUEST_READ_CONTACTS);
         }
 
     }
@@ -113,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private ArrayList<MpesaEntry> getCurrentMonthEntries(ArrayList<MpesaEntry> entries) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.of(2019, 10, 31);
         ArrayList<MpesaEntry> currentMonth = new ArrayList<>();
 
         for (MpesaEntry entry : entries) {
@@ -130,8 +131,28 @@ public class MainActivity extends AppCompatActivity {
         return Double.parseDouble(parsedStr);
     }
 
-    private void calcAmounts(ArrayList<MpesaEntry> entries) {
+    private List<MpesaEntry> getSameDayEntries(ArrayList<MpesaEntry> currentMonthEntries, MpesaEntry entry) {
+        return currentMonthEntries.subList(currentMonthEntries.indexOf(entry),(currentMonthEntries.lastIndexOf(entry)+1));
+    }
 
+    private DailyTransactions findDailyTotals(ArrayList<MpesaEntry> sameDayEntries){
+        DailyTransactions dayTransactions = new DailyTransactions(sameDayEntries.get(0).getDate(),0.0,0.0);
+
+        sameDayEntries.forEach(n->{
+            if (n.getKeyword()=="sent"){
+                double sum=dayTransactions.getAmntSent();
+                double amount=convertToDouble(n.getAmount());
+                sum+=amount;
+                dayTransactions.setAmntSent(sum);
+            }else {
+                double sum=dayTransactions.getAmntReceived();
+                double amount=convertToDouble(n.getAmount());
+                sum+=amount;
+                dayTransactions.setAmntSent(sum);
+            }
+        });
+
+        return dayTransactions;
     }
 
 }
