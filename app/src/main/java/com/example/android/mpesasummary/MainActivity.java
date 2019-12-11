@@ -68,38 +68,36 @@ public class MainActivity extends AppCompatActivity {
                 LocalDate date = LocalDate.parse(formattedDate);
                 String body = c.getString(c.getColumnIndexOrThrow("body"));
 
-                MpesaEntry entry = new MpesaEntry();
-                entry.setDate(date);
 
                 if (body.contains("sent")) {
-                    entry.setKeyword("sent");
-                    String amountStr = StringUtils.substringBetween(body, "Ksh", "sent").replaceAll(",","");
-                    entry.setAmount(amountStr);
+                    String amountStr = StringUtils.substringBetween(body, "Ksh", "sent");
+                    MpesaEntry entry = new MpesaEntry(date, "sent", amountStr);
                     smsList.add(entry);
 
                 } else if (body.contains("received")) {
-                    entry.setKeyword("received");
-                    entry.setAmount(StringUtils.substringBetween(body, "Ksh", "from"));
+                    String amountStr = StringUtils.substringBetween(body, "Ksh", "from");
+                    MpesaEntry entry = new MpesaEntry(date, "received", amountStr);
                     smsList.add(entry);
 
                 } else if (body.contains("paid")) {
-                    entry.setKeyword("sent");
-                    entry.setAmount(StringUtils.substringBetween(body, "Ksh", "paid"));
+
+                    String amountStr = StringUtils.substringBetween(body, "Ksh", "paid");
+                    MpesaEntry entry = new MpesaEntry(date, "sent", amountStr);
                     smsList.add(entry);
 
                 } else if (body.contains("bought")) {
-                    entry.setKeyword("sent");
-                    entry.setAmount(StringUtils.substringBetween(body, "Ksh", "of"));
+                    String amountStr = StringUtils.substringBetween(body, "Ksh", "of");
+                    MpesaEntry entry = new MpesaEntry(date, "sent", amountStr);
                     smsList.add(entry);
 
                 } else if (body.contains("give")) {
-                    entry.setKeyword("received");
-                    entry.setAmount(StringUtils.substringBetween(body, "Ksh", "cash"));
+                    String amountStr = StringUtils.substringBetween(body, "Ksh", "cash");
+                    MpesaEntry entry = new MpesaEntry(date, "received", amountStr);
                     smsList.add(entry);
 
                 } else if (body.contains("withdraw")) {
-                    entry.setKeyword("sent");
-                    entry.setAmount(StringUtils.substringBetween(body, "Withdraw Ksh", "from"));
+                    String amountStr = StringUtils.substringBetween(body, "Withdraw Ksh", "from");
+                    MpesaEntry entry = new MpesaEntry(date, "sent", amountStr);
                     smsList.add(entry);
 
                 }
@@ -110,7 +108,6 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "no messages found");
         }
 
-        smsList.removeIf(n -> (n.toString() == "date: " + n.getDate() + ",keyword:,amount:"));
         return smsList;
 
     }
@@ -128,7 +125,12 @@ public class MainActivity extends AppCompatActivity {
         return currentMonth;
     }
 
-    private void calcAmounts(ArrayList<MpesaEntry> entries){
+    private double convertToDouble(String val) {
+        String parsedStr = val.contains(",") ? val.replaceAll(",", "") : val;
+        return Double.parseDouble(parsedStr);
+    }
+
+    private void calcAmounts(ArrayList<MpesaEntry> entries) {
 
     }
 

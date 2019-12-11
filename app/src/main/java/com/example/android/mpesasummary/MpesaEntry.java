@@ -11,11 +11,10 @@ public class MpesaEntry {
     private String keyword;
     private String amount;
 
-
-    public MpesaEntry() {
-        this.date = null;
-        this.keyword = "";
-        this.amount = "";
+    public MpesaEntry(LocalDate date, String keyword, String amount) {
+        this.date = date;
+        this.keyword = keyword;
+        this.amount = amount;
     }
 
     public LocalDate getDate() {
