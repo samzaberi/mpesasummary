@@ -4,22 +4,25 @@ import androidx.annotation.NonNull;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.time.LocalDate;
+
 public class MpesaEntry {
-    private String date;
+    private LocalDate date;
     private String keyword;
     private String amount;
 
-    public MpesaEntry(){
-        this.date="";
-        this.keyword="";
-        this.amount="";
+
+    public MpesaEntry() {
+        this.date = null;
+        this.keyword = "";
+        this.amount = "";
     }
 
-    public String getDate() {
+    public LocalDate getDate() {
         return date;
     }
 
-    public void setDate(String date) {
+    public void setDate(LocalDate date) {
         this.date = date;
     }
 
@@ -42,6 +45,6 @@ public class MpesaEntry {
     @NonNull
     @Override
     public String toString() {
-        return "date: "+date+", keyword: "+keyword+", amount: "+amount;
+        return "date: " + date + ", keyword: " + keyword + ", amount: " + amount;
     }
 }
