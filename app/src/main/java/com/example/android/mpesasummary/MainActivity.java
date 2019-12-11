@@ -11,13 +11,20 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Telephony;
+import android.util.Log;
 import android.widget.TextView;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
-    ArrayList smsList;
+    ArrayList<String> smsList;
     private static final int PERMISSION_REQUEST_READ_CONTACTS = 100;
+    private static final String TAG = "SMS";
 
     TextView msgText;
 
@@ -48,12 +55,39 @@ public class MainActivity extends AppCompatActivity {
 
 
         Cursor c = cr.query(inboxURI, projection, selection, selectionArgs, null);
-        while (c.moveToNext()) {
-            String Date = c.getString(c.getColumnIndexOrThrow("date")).toString();
-            String Body = c.getString(c.getColumnIndexOrThrow("body")).toString();
-            smsList.add("Body: " + Body + " Date: " + Date);
+        if (c != null) {
+            while (c.moveToNext()) {
+                long dateMillis = c.getLong(c.getColumnIndexOrThrow("date"));
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis(dateMillis);
+                String formattedDate = new SimpleDateFormat("MM/dd/yyyy").format(calendar.getTime());
+
+                String body = c.getString(c.getColumnIndexOrThrow("body"));
+                String substr = "";
+                MpesaEntry entry = new MpesaEntry();
+                if (body.contains("sent")) {
+                    substr = StringUtils.substringBetween(body, "Ksh", "sent");
+                } else if (body.contains("received")) {
+                    substr = StringUtils.substringBetween(body, "Ksh", "from");
+                } else if (body.contains("paid")) {
+                    substr = StringUtils.substringBetween(body, "Ksh", "paid");
+                } else if (body.contains("bought")) {
+                    substr = StringUtils.substringBetween(body, "Ksh", "of");
+                } else if (body.contains("give")) {
+                    substr = StringUtils.substringBetween(body, "Ksh", "cash");
+                } else if (body.contains("withdraw")) {
+                    substr = StringUtils.substringBetween(body, "Withdraw Ksh", "from");
+                }
+
+                smsList.add("Date: " + formattedDate + " Body: " + substr);
+
+
+            }
+            c.close();
+        } else {
+            Log.e(TAG, "no messages found");
         }
-        c.close();
+
         msgText.setText(smsList.toString());
 
     }
