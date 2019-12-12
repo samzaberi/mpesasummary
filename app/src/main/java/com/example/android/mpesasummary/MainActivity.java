@@ -15,15 +15,19 @@ import android.util.Log;
 import android.widget.TextView;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class MainActivity extends AppCompatActivity {
-    ArrayList<MpesaEntry> allTextEntries, currentMonthEntries;
+    ArrayList<MpesaSmsEntry> allTextEntries, currentMonthEntries;
     private static final int PERMISSION_REQUEST_READ_CONTACTS = 100;
     private static final String TAG = "SMS";
 
@@ -50,58 +54,61 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private ArrayList<MpesaEntry> fetchTexts() {
+    private ArrayList<MpesaSmsEntry> fetchTexts() {
         Uri inboxURI = Uri.parse("content://sms/inbox");
         String[] projection = {Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.DATE};
         String selection = Telephony.Sms.ADDRESS + "= ?";
         String[] selectionArgs = {"MPESA"};
-        ArrayList<MpesaEntry> smsList = new ArrayList<>();
         ContentResolver cr = getContentResolver();
-
-
         Cursor c = cr.query(inboxURI, projection, selection, selectionArgs, null);
+
+        ArrayList<MpesaSmsEntry> smsList = new ArrayList<>();
+
         if (c != null) {
             while (c.moveToNext()) {
                 long dateMillis = c.getLong(c.getColumnIndexOrThrow("date"));
+                String body = c.getString(c.getColumnIndexOrThrow("body"));
+
                 Calendar calendar = Calendar.getInstance();
                 calendar.setTimeInMillis(dateMillis);
                 String formattedDate = new SimpleDateFormat("yyyy-MM-dd").format(calendar.getTime());
                 LocalDate date = LocalDate.parse(formattedDate);
-                String body = c.getString(c.getColumnIndexOrThrow("body"));
-
+                String amountStr="";
+                String keyword="";
 
                 if (body.contains("sent")) {
-                    String amountStr = StringUtils.substringBetween(body, "Ksh", "sent");
-                    MpesaEntry entry = new MpesaEntry(date, "sent", amountStr);
-                    smsList.add(entry);
+                    keyword = "sent";
+                    amountStr = StringUtils.substringBetween(body, "Ksh", "sent");
+
 
                 } else if (body.contains("received")) {
-                    String amountStr = StringUtils.substringBetween(body, "Ksh", "from");
-                    MpesaEntry entry = new MpesaEntry(date, "received", amountStr);
-                    smsList.add(entry);
+                    keyword = "received";
+                    amountStr = StringUtils.substringBetween(body, "Ksh", "from");
+
 
                 } else if (body.contains("paid")) {
+                    keyword = "sent";
+                    amountStr = StringUtils.substringBetween(body, "Ksh", "paid");
 
-                    String amountStr = StringUtils.substringBetween(body, "Ksh", "paid");
-                    MpesaEntry entry = new MpesaEntry(date, "sent", amountStr);
-                    smsList.add(entry);
 
                 } else if (body.contains("bought")) {
-                    String amountStr = StringUtils.substringBetween(body, "Ksh", "of");
-                    MpesaEntry entry = new MpesaEntry(date, "sent", amountStr);
-                    smsList.add(entry);
+                    keyword = "sent";
+                    amountStr = StringUtils.substringBetween(body, "Ksh", "of");
+
 
                 } else if (body.contains("give")) {
-                    String amountStr = StringUtils.substringBetween(body, "Ksh", "cash");
-                    MpesaEntry entry = new MpesaEntry(date, "received", amountStr);
-                    smsList.add(entry);
+                    keyword = "received";
+                    amountStr = StringUtils.substringBetween(body, "Ksh", "cash");
+
 
                 } else if (body.contains("withdraw")) {
-                    String amountStr = StringUtils.substringBetween(body, "Withdraw Ksh", "from");
-                    MpesaEntry entry = new MpesaEntry(date, "sent", amountStr);
-                    smsList.add(entry);
+                    keyword = "sent";
+                    amountStr = StringUtils.substringBetween(body, "Withdraw Ksh", "from");
 
                 }
+
+                MpesaSmsEntry entry = new MpesaSmsEntry(date, keyword, amountStr);
+                smsList.add(entry);
 
             }
             c.close();
@@ -113,46 +120,17 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private ArrayList<MpesaEntry> getCurrentMonthEntries(ArrayList<MpesaEntry> entries) {
+    private ArrayList<MpesaSmsEntry> getCurrentMonthEntries(ArrayList<MpesaSmsEntry> entries) {
         LocalDate today = LocalDate.of(2019, 10, 31);
-        ArrayList<MpesaEntry> currentMonth = new ArrayList<>();
+        ArrayList<MpesaSmsEntry> currentMonth = new ArrayList<>();
 
-        for (MpesaEntry entry : entries) {
+        for (MpesaSmsEntry entry : entries) {
             if (entry.getDate().getMonth() == today.getMonth() &&
                     entry.getDate().getYear() == today.getYear()) {
                 currentMonth.add(entry);
             }
         }
         return currentMonth;
-    }
-
-    private double convertToDouble(String val) {
-        String parsedStr = val.contains(",") ? val.replaceAll(",", "") : val;
-        return Double.parseDouble(parsedStr);
-    }
-
-    private List<MpesaEntry> getSameDayEntries(ArrayList<MpesaEntry> currentMonthEntries, MpesaEntry entry) {
-        return currentMonthEntries.subList(currentMonthEntries.indexOf(entry),(currentMonthEntries.lastIndexOf(entry)+1));
-    }
-
-    private DailyTransactions findDailyTotals(ArrayList<MpesaEntry> sameDayEntries){
-        DailyTransactions dayTransactions = new DailyTransactions(sameDayEntries.get(0).getDate(),0.0,0.0);
-
-        sameDayEntries.forEach(n->{
-            if (n.getKeyword()=="sent"){
-                double sum=dayTransactions.getAmntSent();
-                double amount=convertToDouble(n.getAmount());
-                sum+=amount;
-                dayTransactions.setAmntSent(sum);
-            }else {
-                double sum=dayTransactions.getAmntReceived();
-                double amount=convertToDouble(n.getAmount());
-                sum+=amount;
-                dayTransactions.setAmntSent(sum);
-            }
-        });
-
-        return dayTransactions;
     }
 
 }
