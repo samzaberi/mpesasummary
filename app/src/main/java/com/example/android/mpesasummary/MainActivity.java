@@ -16,7 +16,10 @@ import android.widget.TextView;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -46,8 +49,9 @@ public class MainActivity extends AppCompatActivity {
             ArrayList<MpesaEntry> mpesaEntries = getAmounts(filterDetails);
             Map<Date, List<Double>> datesSent = squash(mpesaEntries);
             ArrayList<MpesaEntry> summedEntries = updateEntries(datesSent);
+            ArrayList<MpesaEntry> currentMonth = getCurrentMonth(summedEntries);
             Log.i(TAG, "here");
-            msgText.setText(summedEntries.toString());
+            msgText.setText(currentMonth.toString());
 
 
         } else {
@@ -180,14 +184,26 @@ public class MainActivity extends AppCompatActivity {
         return newEntries;
     }
 
-//    private ArrayList<MpesaEntry> getCurrentMonth(ArrayList<MpesaEntry> entries){
-//        LocalDate today=LocalDate.now();
-//        ArrayList<MpesaEntry> currentMonth=new ArrayList<>();
-//
-//        for (MpesaEntry entry:entries){
-//            LocalDate date=entry.getDate().toLo
-//        }
-//    }
+    private ArrayList<MpesaEntry> getCurrentMonth(ArrayList<MpesaEntry> entries) {
+        LocalDate today=LocalDate.now();
+
+        ArrayList<MpesaEntry> currentMonth = new ArrayList<>();
+
+        for (MpesaEntry entry : entries) {
+            if (entry.getDate() == null) continue;
+            Date date=entry.getDate();
+            Instant instant = date.toInstant();
+            ZoneId zoneId = ZoneId.of ( "America/Montreal" );
+            ZonedDateTime zdt = ZonedDateTime.ofInstant ( instant , zoneId );
+            LocalDate localDate = zdt.toLocalDate();
+
+            if (localDate.getMonth()==today.getMonth()&&localDate.getYear()==today.getYear()){
+                currentMonth.add(entry);
+            }
+
+        }
+        return currentMonth;
+    }
 
 }
 

@@ -38,7 +38,7 @@ public class MpesaEntry {
     @NonNull
     @Override
     public String toString() {
-        return date + "," + amountReceived + "," + amountSent;
+        return "Date: " + date + ", sent: " + amountReceived + ", received: " + amountSent;
     }
 
     @Override
