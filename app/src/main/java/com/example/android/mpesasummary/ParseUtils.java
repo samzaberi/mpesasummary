@@ -2,12 +2,13 @@ package com.example.android.mpesasummary;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
 public class ParseUtils {
     public Map<String, String> parse(final String message) {
-        String[] exploded = message.toLowerCase().split(" ");
 
         // Get date
         String date = getDate(message.toLowerCase());
@@ -18,21 +19,35 @@ public class ParseUtils {
         //Get mpesa amount
         String amount = "";
 
-        int moneyCount = 0;
-        for (String str : exploded) {
-            if (str.startsWith("ksh")) {
-                String money = str.replace("ksh", "");
-                if (moneyCount == 0) {
-                    amount = money;
-                }
-                moneyCount++;
-            }
+        if (message.contains("sent")) {
+            amount = StringUtils.substringBetween(message, "Ksh", "sent");
+
+
+        } else if (message.contains("received")) {
+            amount = StringUtils.substringBetween(message, "Ksh", "from");
+
+
+        } else if (message.contains("paid")) {
+            amount = StringUtils.substringBetween(message, "Ksh", "paid");
+
+
+        } else if (message.contains("bought")) {
+            amount = StringUtils.substringBetween(message, "Ksh", "of");
+
+
+        } else if (message.contains("give")) {
+            amount = StringUtils.substringBetween(message, "Ksh", "cash");
+
+
+        } else if (message.contains("withdraw")) {
+            amount = StringUtils.substringBetween(message, "Withdraw Ksh", "from");
+
         }
 
         Map<String, String> parsed = new HashMap<>();
         parsed.put("date",date);
         parsed.put("type", transactionType.trim());
-        parsed.put("amount", amount.trim());
+        parsed.put("amount", amount);
         return parsed;
     }
 
@@ -56,6 +71,7 @@ public class ParseUtils {
 
     private String getDate(String message){
         String date = StringUtils.substringBetween(message," on "," at");
+        if (date==null) return "";
         return date;
     }
 }

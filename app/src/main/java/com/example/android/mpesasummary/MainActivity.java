@@ -14,17 +14,13 @@ import android.provider.Telephony;
 import android.util.Log;
 import android.widget.TextView;
 
-import org.apache.commons.lang3.StringUtils;
-
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
+import java.util.Date;
 import java.util.Map;
-import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_READ_CONTACTS = 100;
@@ -42,10 +38,11 @@ public class MainActivity extends AppCompatActivity {
         int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS);
 
         if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
-            ArrayList<String> textlist = fetchTexts();
-            ArrayList<Map<String, String>> textDetails = extractDetails(textlist);
-            ArrayList<TextDetails> details = getAmounts(textDetails);
-            msgText.setText(details.toString());
+            ArrayList<String> smslist = fetchTexts();
+            ArrayList<Map<String, String>> textDetails = extractDetails(smslist);
+            ArrayList<Map<String, String>> filterDetails = filter(textDetails);
+            ArrayList<MpesaEntry> mpesaEntries = getAmounts(filterDetails);
+            msgText.setText(mpesaEntries.toString());
 
 
         } else {
@@ -79,44 +76,68 @@ public class MainActivity extends AppCompatActivity {
         return smslist;
     }
 
-    private ArrayList<Map<String, String>> extractDetails(ArrayList<String> textlist) {
+    private ArrayList<Map<String, String>> extractDetails(ArrayList<String> smslist) {
         ParseUtils parser = new ParseUtils();
         ArrayList<Map<String, String>> textDetails = new ArrayList<>();
-        for (String text : textlist) {
+        for (String text : smslist) {
             Map<String, String> bodyDetail = parser.parse(text);
             textDetails.add(bodyDetail);
         }
         return textDetails;
     }
 
+    private ArrayList<Map<String, String>> filter(ArrayList<Map<String, String>> textDetails) {
+        ArrayList<Map<String, String>> filteredList = new ArrayList<>();
+        for (Map<String, String> text : textDetails) {
+            if (text.get("date") != "" && text.get("type") != "unknown") {
+                filteredList.add(text);
+            }
+        }
+        return filteredList;
+    }
+
     private double convertToDouble(String s) {
-        if (s != null) {
-            String sp = s.replaceAll(",", "");
-            return Double.parseDouble(sp);
+        if (s != null && s != "") {
+            if (!s.contains(",")) {
+                return Double.parseDouble(s);
+            } else {
+                String sp = s.replaceAll(",", "");
+                return Double.parseDouble(sp);
+            }
+
         } else {
             return 0.0;
         }
 
     }
 
-    private ArrayList<TextDetails> getAmounts(ArrayList<Map<String, String>> textDetails) {
-        ArrayList<TextDetails> detailslist = new ArrayList<>();
+    private ArrayList<MpesaEntry> getAmounts(ArrayList<Map<String, String>> textDetails) {
+        ArrayList<MpesaEntry> mpesaEntries = new ArrayList<>();
         for (Map<String, String> textDetail : textDetails) {
-            TextDetails txDetails = new TextDetails();
-            LocalDate date = LocalDate.parse(textDetail.get("date"));
-            txDetails.setDate(date);
-            if (textDetail.get("type") == "sent") {
-                double amount = convertToDouble(textDetail.get("amount"));
-                txDetails.setAmountSent(amount);
-                txDetails.setAmountReceived(0.0);
-            } else {
-                double amount = convertToDouble(textDetail.get("amount"));
-                txDetails.setAmountReceived(amount);
-                txDetails.setAmountSent(0.0);
+            MpesaEntry mpEntry = new MpesaEntry();
+            SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yy");
+            String datestr = textDetail.get("date");
+            Date date = null;
+            try {
+                date = formatter.parse(datestr);
+            } catch (ParseException e) {
+                e.printStackTrace();
             }
-            detailslist.add(txDetails);
+            mpEntry.setDate(date);
+            double amount = convertToDouble(textDetail.get("amount"));
+
+            if (textDetail.get("type")=="sent"){
+                mpEntry.setAmountSent(amount);
+                mpEntry.setAmountReceived(0.0);
+            }else{
+                mpEntry.setAmountSent(0.0);
+                mpEntry.setAmountReceived(amount);
+            }
+
+            mpesaEntries.add(mpEntry);
+
         }
-        return detailslist;
+        return mpesaEntries;
     }
 
 }

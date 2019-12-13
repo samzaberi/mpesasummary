@@ -3,17 +3,18 @@ package com.example.android.mpesasummary;
 import androidx.annotation.NonNull;
 
 import java.time.LocalDate;
+import java.util.Date;
 
-public class TextDetails {
-    private LocalDate date;
+public class MpesaEntry {
+    private Date date;
     private double amountSent;
     private double amountReceived;
 
-    public LocalDate getDate() {
+    public Date getDate() {
         return date;
     }
 
-    public void setDate(LocalDate date) {
+    public void setDate(Date date) {
         this.date = date;
     }
 
