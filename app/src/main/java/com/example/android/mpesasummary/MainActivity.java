@@ -47,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
             ArrayList<Map<String, String>> textDetails = extractDetails(smslist);
             ArrayList<Map<String, String>> filterDetails = filter(textDetails);
             ArrayList<MpesaEntry> mpesaEntries = getAmounts(filterDetails);
-            Map<Date, List<Double>> datesSent = squash(mpesaEntries);
+            Map<LocalDate, List<Double>> datesSent = squash(mpesaEntries);
             ArrayList<MpesaEntry> summedEntries = updateEntries(datesSent);
             ArrayList<MpesaEntry> currentMonth = getCurrentMonth(summedEntries);
             Log.i(TAG, "here");
@@ -127,10 +127,15 @@ public class MainActivity extends AppCompatActivity {
             Date date = null;
             try {
                 date = formatter.parse(datestr);
+                Instant instant = date.toInstant();
+                ZoneId zoneId = ZoneId.of ( "America/Montreal" );
+                ZonedDateTime zdt = ZonedDateTime.ofInstant ( instant , zoneId );
+                LocalDate localDate = zdt.toLocalDate();
+                mpEntry.setDate(localDate);
             } catch (ParseException e) {
                 e.printStackTrace();
             }
-            mpEntry.setDate(date);
+
             double amount = convertToDouble(textDetail.get("amount"));
 
             if (textDetail.get("type") == "sent") {
@@ -147,8 +152,8 @@ public class MainActivity extends AppCompatActivity {
         return mpesaEntries;
     }
 
-    private Map<Date, List<Double>> squash(ArrayList<MpesaEntry> entries) {
-        Map<Date, List<Double>> grouped = new HashMap<>();
+    private Map<LocalDate, List<Double>> squash(ArrayList<MpesaEntry> entries) {
+        Map<LocalDate, List<Double>> grouped = new HashMap<>();
 
         for (MpesaEntry entry : entries) {
             if (grouped.containsKey(entry.getDate())) {
@@ -171,10 +176,10 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private ArrayList<MpesaEntry> updateEntries(Map<Date, List<Double>> amounts) {
+    private ArrayList<MpesaEntry> updateEntries(Map<LocalDate, List<Double>> amounts) {
         ArrayList<MpesaEntry> newEntries = new ArrayList<>();
 
-        for (Map.Entry<Date, List<Double>> amount : amounts.entrySet()) {
+        for (Map.Entry<LocalDate, List<Double>> amount : amounts.entrySet()) {
             MpesaEntry entry = new MpesaEntry();
             entry.setDate(amount.getKey());
             entry.setAmountSent(amount.getValue().get(0));
@@ -191,13 +196,8 @@ public class MainActivity extends AppCompatActivity {
 
         for (MpesaEntry entry : entries) {
             if (entry.getDate() == null) continue;
-            Date date=entry.getDate();
-            Instant instant = date.toInstant();
-            ZoneId zoneId = ZoneId.of ( "America/Montreal" );
-            ZonedDateTime zdt = ZonedDateTime.ofInstant ( instant , zoneId );
-            LocalDate localDate = zdt.toLocalDate();
 
-            if (localDate.getMonth()==today.getMonth()&&localDate.getYear()==today.getYear()){
+            if (entry.getDate().getMonth()==today.getMonth()&&entry.getDate().getYear()==today.getYear()){
                 currentMonth.add(entry);
             }
 
