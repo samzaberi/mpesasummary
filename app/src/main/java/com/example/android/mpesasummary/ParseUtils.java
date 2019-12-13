@@ -35,11 +35,11 @@ public class ParseUtils {
             amount = StringUtils.substringBetween(message, "Ksh", "of");
 
 
-        } else if (message.contains("give")) {
+        } else if (message.contains("Give")) {
             amount = StringUtils.substringBetween(message, "Ksh", "cash");
 
 
-        } else if (message.contains("withdraw")) {
+        } else if (message.contains("Withdraw")) {
             amount = StringUtils.substringBetween(message, "Withdraw Ksh", "from");
 
         }

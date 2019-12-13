@@ -1,6 +1,7 @@
 package com.example.android.mpesasummary;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import java.time.LocalDate;
 import java.util.Date;
@@ -37,6 +38,19 @@ public class MpesaEntry {
     @NonNull
     @Override
     public String toString() {
-        return date+","+amountReceived+","+amountSent;
+        return date + "," + amountReceived + "," + amountSent;
+    }
+
+    @Override
+    public boolean equals(@Nullable Object obj) {
+        if (obj == this) return true;
+
+        if (!(obj instanceof MpesaEntry)) {
+            return false;
+        }
+
+        MpesaEntry entry = (MpesaEntry) obj;
+
+        return date.equals(entry.date);
     }
 }

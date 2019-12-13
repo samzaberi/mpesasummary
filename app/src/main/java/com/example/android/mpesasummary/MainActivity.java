@@ -17,9 +17,11 @@ import android.widget.TextView;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
@@ -42,7 +44,10 @@ public class MainActivity extends AppCompatActivity {
             ArrayList<Map<String, String>> textDetails = extractDetails(smslist);
             ArrayList<Map<String, String>> filterDetails = filter(textDetails);
             ArrayList<MpesaEntry> mpesaEntries = getAmounts(filterDetails);
-            msgText.setText(mpesaEntries.toString());
+            Map<Date, List<Double>> datesSent = squash(mpesaEntries);
+            ArrayList<MpesaEntry> summedEntries = updateEntries(datesSent);
+            Log.i(TAG, "here");
+            msgText.setText(summedEntries.toString());
 
 
         } else {
@@ -104,11 +109,9 @@ public class MainActivity extends AppCompatActivity {
                 String sp = s.replaceAll(",", "");
                 return Double.parseDouble(sp);
             }
-
         } else {
             return 0.0;
         }
-
     }
 
     private ArrayList<MpesaEntry> getAmounts(ArrayList<Map<String, String>> textDetails) {
@@ -126,10 +129,10 @@ public class MainActivity extends AppCompatActivity {
             mpEntry.setDate(date);
             double amount = convertToDouble(textDetail.get("amount"));
 
-            if (textDetail.get("type")=="sent"){
+            if (textDetail.get("type") == "sent") {
                 mpEntry.setAmountSent(amount);
                 mpEntry.setAmountReceived(0.0);
-            }else{
+            } else {
                 mpEntry.setAmountSent(0.0);
                 mpEntry.setAmountReceived(amount);
             }
@@ -139,6 +142,52 @@ public class MainActivity extends AppCompatActivity {
         }
         return mpesaEntries;
     }
+
+    private Map<Date, List<Double>> squash(ArrayList<MpesaEntry> entries) {
+        Map<Date, List<Double>> grouped = new HashMap<>();
+
+        for (MpesaEntry entry : entries) {
+            if (grouped.containsKey(entry.getDate())) {
+                List<Double> amounts = grouped.get(entry.getDate());
+                double sumSent = amounts.get(0) + entry.getAmountSent();
+                double sumReceived = amounts.get(1) + entry.getAmountReceived();
+                amounts.clear();
+                amounts.add(sumSent);
+                amounts.add(sumReceived);
+                grouped.put(entry.getDate(), amounts);
+
+            } else {
+                List<Double> amounts = new ArrayList<>();
+                amounts.add(entry.getAmountSent());
+                amounts.add(entry.getAmountReceived());
+                grouped.put(entry.getDate(), amounts);
+            }
+        }
+        return grouped;
+
+    }
+
+    private ArrayList<MpesaEntry> updateEntries(Map<Date, List<Double>> amounts) {
+        ArrayList<MpesaEntry> newEntries = new ArrayList<>();
+
+        for (Map.Entry<Date, List<Double>> amount : amounts.entrySet()) {
+            MpesaEntry entry = new MpesaEntry();
+            entry.setDate(amount.getKey());
+            entry.setAmountSent(amount.getValue().get(0));
+            entry.setAmountReceived(amount.getValue().get(1));
+            newEntries.add(entry);
+        }
+        return newEntries;
+    }
+
+//    private ArrayList<MpesaEntry> getCurrentMonth(ArrayList<MpesaEntry> entries){
+//        LocalDate today=LocalDate.now();
+//        ArrayList<MpesaEntry> currentMonth=new ArrayList<>();
+//
+//        for (MpesaEntry entry:entries){
+//            LocalDate date=entry.getDate().toLo
+//        }
+//    }
 
 }
 
