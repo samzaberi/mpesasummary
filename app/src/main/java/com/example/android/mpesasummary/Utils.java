@@ -23,22 +23,22 @@ public class Utils {
         String amount = "";
 
         if (message.contains("sent")) {
-            amount = StringUtils.substringBetween(message, "Ksh", "sent");
+            amount = StringUtils.substringBetween(message, "Ksh", " sent");
 
         } else if (message.contains("received")) {
-            amount = StringUtils.substringBetween(message, "Ksh", "from");
+            amount = StringUtils.substringBetween(message, "Ksh", " from");
 
         } else if (message.contains("paid")) {
-            amount = StringUtils.substringBetween(message, "Ksh", "paid");
+            amount = StringUtils.substringBetween(message, "Ksh", " paid");
 
         } else if (message.contains("bought")) {
-            amount = StringUtils.substringBetween(message, "Ksh", "of");
+            amount = StringUtils.substringBetween(message, "Ksh", " of");
 
         } else if (message.contains("Give")) {
-            amount = StringUtils.substringBetween(message, "Ksh", "cash");
+            amount = StringUtils.substringBetween(message, "Ksh", " cash");
 
         } else if (message.contains("Withdraw")) {
-            amount = StringUtils.substringBetween(message, "Withdraw Ksh", "from");
+            amount = StringUtils.substringBetween(message, "Withdraw Ksh", " from");
 
         }
 
