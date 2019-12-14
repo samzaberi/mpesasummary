@@ -63,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
             Log.i(TAG, "here");
             msgText.setText(currentMonth.toString());
 
+            upload(db,currentMonth,"currentMonth");
 
         } else {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS},
@@ -84,9 +85,7 @@ public class MainActivity extends AppCompatActivity {
         if (c != null) {
             while (c.moveToNext()) {
                 String body = c.getString(c.getColumnIndexOrThrow("body"));
-
                 smslist.add(body);
-
             }
             c.close();
         } else {
@@ -157,7 +156,6 @@ public class MainActivity extends AppCompatActivity {
                 amounts.put("received", entry.get("received"));
                 squashed.put(date, amounts);
             }
-
         }
         return squashed;
     }
@@ -188,7 +186,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void upload(FirebaseFirestore db, Map<String, Map<String, String>> data, String dataName) {
-
         db.collection(dataName)
                 .add(data)
                 .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
