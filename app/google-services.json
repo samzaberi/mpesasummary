@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "508534787654",
+    "firebase_url": "https://mpesa-sms-store.firebaseio.com",
+    "project_id": "mpesa-sms-store",
+    "storage_bucket": "mpesa-sms-store.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:508534787654:android:615fa52781773c140f8447",
+        "android_client_info": {
+          "package_name": "com.example.android.mpesasummary"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "508534787654-7sbqkdbubhe90r6rtcdc1lteflkfralf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDBqriJSgBV0lGTnFvfGxVjVQHoRKl9pGo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "508534787654-7sbqkdbubhe90r6rtcdc1lteflkfralf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
