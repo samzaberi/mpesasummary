@@ -6,8 +6,11 @@ import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public class ParseUtils {
+public class Utils {
+
     public Map<String, String> parse(final String message) {
 
         // Get date
@@ -64,14 +67,30 @@ public class ParseUtils {
         } else if (message.toLowerCase().contains("you bought")) {
             transactionType = "sent";
         } else if (message.toLowerCase().contains("give")) {
-            transactionType = "sent";
+            transactionType = "received";
         }
         return transactionType;
     }
 
     private String getDate(String message){
-        String date = StringUtils.substringBetween(message," on "," at");
-        if (date==null) return "";
-        return date;
+        Pattern DATE_PATTERN = Pattern.compile("on (\\d{1,2}/\\d{1,2}/\\d{2}) at");
+        Matcher matcher= DATE_PATTERN.matcher(message);
+        while (matcher.find()){
+            return matcher.group(1);
+        }
+        return "";
+    }
+
+    public double convertToDouble(String s) {
+        if (s != null && s != "") {
+            if (!s.contains(",")) {
+                return Double.parseDouble(s);
+            } else {
+                String sp = s.replaceAll(",", "");
+                return Double.parseDouble(sp);
+            }
+        } else {
+            return 0.0;
+        }
     }
 }

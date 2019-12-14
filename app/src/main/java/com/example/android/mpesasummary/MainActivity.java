@@ -1,5 +1,6 @@
 package com.example.android.mpesasummary;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -14,14 +15,19 @@ import android.provider.Telephony;
 import android.util.Log;
 import android.widget.TextView;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -40,16 +46,20 @@ public class MainActivity extends AppCompatActivity {
 
         msgText = (TextView) findViewById(R.id.msg_string);
 
+        // Access a Cloud Firestore instance from your Activity
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+
         int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS);
 
         if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
             ArrayList<String> smslist = fetchTexts();
             ArrayList<Map<String, String>> textDetails = extractDetails(smslist);
             ArrayList<Map<String, String>> filterDetails = filter(textDetails);
-            ArrayList<MpesaEntry> mpesaEntries = getAmounts(filterDetails);
-            Map<LocalDate, List<Double>> datesSent = squash(mpesaEntries);
-            ArrayList<MpesaEntry> summedEntries = updateEntries(datesSent);
-            ArrayList<MpesaEntry> currentMonth = getCurrentMonth(summedEntries);
+            ArrayList<Map<String, String>> convertList = convert(filterDetails);
+            Map<String, Map<String, String>> squashList = squash(convertList);
+            Map<String, Map<String, String>> currentMonth = getCurrentMonth(squashList);
+
             Log.i(TAG, "here");
             msgText.setText(currentMonth.toString());
 
@@ -86,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private ArrayList<Map<String, String>> extractDetails(ArrayList<String> smslist) {
-        ParseUtils parser = new ParseUtils();
+        Utils parser = new Utils();
         ArrayList<Map<String, String>> textDetails = new ArrayList<>();
         for (String text : smslist) {
             Map<String, String> bodyDetail = parser.parse(text);
@@ -105,104 +115,94 @@ public class MainActivity extends AppCompatActivity {
         return filteredList;
     }
 
-    private double convertToDouble(String s) {
-        if (s != null && s != "") {
-            if (!s.contains(",")) {
-                return Double.parseDouble(s);
+
+    private ArrayList<Map<String, String>> convert(ArrayList<Map<String, String>> filteredList) {
+        ArrayList<Map<String, String>> convertedList = new ArrayList<>();
+        for (Map<String, String> entry : filteredList) {
+            String date=entry.get("date");
+            String amount=entry.get("amount");
+            String type=entry.get("type");
+            Map<String, String> cvtEntry = new HashMap<>();
+            cvtEntry.put("date", date);
+            if (type == "sent") {
+                cvtEntry.put("sent", amount);
+                cvtEntry.put("received", "0.0");
             } else {
-                String sp = s.replaceAll(",", "");
-                return Double.parseDouble(sp);
+                cvtEntry.put("sent", "0.0");
+                cvtEntry.put("received", amount);
             }
-        } else {
-            return 0.0;
+            convertedList.add(cvtEntry);
         }
+        return convertedList;
     }
 
-    private ArrayList<MpesaEntry> getAmounts(ArrayList<Map<String, String>> textDetails) {
-        ArrayList<MpesaEntry> mpesaEntries = new ArrayList<>();
-        for (Map<String, String> textDetail : textDetails) {
-            MpesaEntry mpEntry = new MpesaEntry();
+    private Map<String, Map<String, String>> squash(ArrayList<Map<String, String>> convertList) {
+        Map<String, Map<String, String>> squashed = new HashMap<>();
+        Utils utils = new Utils();
+        for (Map<String, String> entry : convertList) {
+            String date = entry.get("date");
+            if (squashed.containsKey(date)) {
+                double sent = utils.convertToDouble(squashed.get(date).get("sent"));
+                double received = utils.convertToDouble(squashed.get(date).get("received"));
+                sent += utils.convertToDouble(entry.get("sent"));
+                received += utils.convertToDouble(entry.get("received"));
+                Map<String, String> result = new HashMap<>();
+                result.put("sent", Double.toString(sent));
+                result.put("received", Double.toString(received));
+                squashed.put(date, result);
+
+            } else {
+                Map<String, String> amounts = new HashMap<>();
+                amounts.put("sent", entry.get("sent"));
+                amounts.put("received", entry.get("received"));
+                squashed.put(date, amounts);
+            }
+
+        }
+        return squashed;
+    }
+
+    private Map<String, Map<String, String>> getCurrentMonth(Map<String, Map<String, String>> entries) {
+        Map<String, Map<String, String>> currentMonth = new HashMap<>();
+        LocalDate today = LocalDate.now();
+
+        for (Map.Entry<String, Map<String, String>> entry : entries.entrySet()) {
             SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yy");
-            String datestr = textDetail.get("date");
+            String datestr = entry.getKey();
             Date date = null;
             try {
                 date = formatter.parse(datestr);
                 Instant instant = date.toInstant();
-                ZoneId zoneId = ZoneId.of ( "America/Montreal" );
-                ZonedDateTime zdt = ZonedDateTime.ofInstant ( instant , zoneId );
+                ZoneId zoneId = ZoneId.of("America/Montreal");
+                ZonedDateTime zdt = ZonedDateTime.ofInstant(instant, zoneId);
                 LocalDate localDate = zdt.toLocalDate();
-                mpEntry.setDate(localDate);
+                if (localDate.getYear() == today.getYear() &&
+                        localDate.getMonth() == today.getMonth()) {
+                    currentMonth.put(entry.getKey(), entry.getValue());
+                }
             } catch (ParseException e) {
                 e.printStackTrace();
             }
-
-            double amount = convertToDouble(textDetail.get("amount"));
-
-            if (textDetail.get("type") == "sent") {
-                mpEntry.setAmountSent(amount);
-                mpEntry.setAmountReceived(0.0);
-            } else {
-                mpEntry.setAmountSent(0.0);
-                mpEntry.setAmountReceived(amount);
-            }
-
-            mpesaEntries.add(mpEntry);
-
-        }
-        return mpesaEntries;
-    }
-
-    private Map<LocalDate, List<Double>> squash(ArrayList<MpesaEntry> entries) {
-        Map<LocalDate, List<Double>> grouped = new HashMap<>();
-
-        for (MpesaEntry entry : entries) {
-            if (grouped.containsKey(entry.getDate())) {
-                List<Double> amounts = grouped.get(entry.getDate());
-                double sumSent = amounts.get(0) + entry.getAmountSent();
-                double sumReceived = amounts.get(1) + entry.getAmountReceived();
-                amounts.clear();
-                amounts.add(sumSent);
-                amounts.add(sumReceived);
-                grouped.put(entry.getDate(), amounts);
-
-            } else {
-                List<Double> amounts = new ArrayList<>();
-                amounts.add(entry.getAmountSent());
-                amounts.add(entry.getAmountReceived());
-                grouped.put(entry.getDate(), amounts);
-            }
-        }
-        return grouped;
-
-    }
-
-    private ArrayList<MpesaEntry> updateEntries(Map<LocalDate, List<Double>> amounts) {
-        ArrayList<MpesaEntry> newEntries = new ArrayList<>();
-
-        for (Map.Entry<LocalDate, List<Double>> amount : amounts.entrySet()) {
-            MpesaEntry entry = new MpesaEntry();
-            entry.setDate(amount.getKey());
-            entry.setAmountSent(amount.getValue().get(0));
-            entry.setAmountReceived(amount.getValue().get(1));
-            newEntries.add(entry);
-        }
-        return newEntries;
-    }
-
-    private ArrayList<MpesaEntry> getCurrentMonth(ArrayList<MpesaEntry> entries) {
-        LocalDate today=LocalDate.now();
-
-        ArrayList<MpesaEntry> currentMonth = new ArrayList<>();
-
-        for (MpesaEntry entry : entries) {
-            if (entry.getDate() == null) continue;
-
-            if (entry.getDate().getMonth()==today.getMonth()&&entry.getDate().getYear()==today.getYear()){
-                currentMonth.add(entry);
-            }
-
         }
         return currentMonth;
+    }
+
+    private void upload(FirebaseFirestore db, Map<String, Map<String, String>> data, String dataName) {
+
+        db.collection(dataName)
+                .add(data)
+                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                    @Override
+                    public void onSuccess(DocumentReference documentReference) {
+                        Log.d(TAG, "DocumentSnapshot added with ID: " + documentReference.getId());
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.w(TAG, "Error adding document", e);
+                    }
+                });
     }
 
 }
